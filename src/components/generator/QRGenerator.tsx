@@ -6,8 +6,10 @@ import { db, storage } from '../../firebase';
 import { nanoid } from 'nanoid';
 import { AdvancedQRCode } from './AdvancedQRCode';
 import QRCodeStyling, { type Options } from 'qr-code-styling';
+import { useAuth } from '../../contexts/AuthProvider';
 
 const QRGenerator = () => {
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('url');
   
   // Generic state
@@ -102,6 +104,7 @@ const QRGenerator = () => {
       const shortId = nanoid(7);
       await setDoc(doc(db, 'qrcodes', shortId), {
         shortId,
+        uid: user ? user.uid : null,
         originalUrl: activeTab === 'url' ? qrValue : null,
         type: activeTab.toUpperCase(),
         data: activeTab !== 'url' ? { raw: qrValue } : null,

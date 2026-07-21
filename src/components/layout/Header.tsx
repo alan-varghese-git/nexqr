@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
-import { QrCode, History, Settings, ScanLine, Moon, Sun } from 'lucide-react';
+import { QrCode, History, Settings, ScanLine, Moon, Sun, LayoutDashboard, User as UserIcon } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthProvider';
 
 const Header = () => {
   const location = useLocation();
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const { user } = useAuth();
 
   useEffect(() => {
     // Check local storage or system preference on mount
@@ -73,9 +75,24 @@ const Header = () => {
           <button className="p-2 hover:bg-secondary rounded-full transition-colors text-muted-foreground">
             <Settings size={20} />
           </button>
-          <button className="bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm font-medium hover:bg-primary/90 transition-colors ml-2 hidden sm:block">
-            Login
-          </button>
+          
+          {user ? (
+            <Link 
+              to="/dashboard"
+              className="flex items-center gap-2 bg-secondary text-secondary-foreground px-4 py-2 rounded-md text-sm font-medium hover:bg-secondary/80 transition-colors ml-2"
+            >
+              <LayoutDashboard size={16} />
+              <span className="hidden sm:inline">Dashboard</span>
+            </Link>
+          ) : (
+            <Link 
+              to="/login"
+              className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm font-medium hover:bg-primary/90 transition-colors ml-2"
+            >
+              <UserIcon size={16} />
+              <span className="hidden sm:inline">Login</span>
+            </Link>
+          )}
         </div>
       </div>
     </header>
