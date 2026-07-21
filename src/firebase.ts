@@ -9,7 +9,7 @@ const firebaseConfig = {
   apiKey: "AIzaSyCKANkFYu6EySZ5P_QdMgRu5qkuITJMouk",
   authDomain: "nexqr-981e5.firebaseapp.com",
   projectId: "nexqr-981e5",
-  storageBucket: "nexqr-981e5.firebasestorage.app",
+  storageBucket: "nexqr-981e5.appspot.com",
   messagingSenderId: "281795070446",
   appId: "1:281795070446:web:ebde75197793822b1d26ff"
 };
