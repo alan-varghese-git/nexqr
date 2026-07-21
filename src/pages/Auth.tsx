@@ -1,8 +1,31 @@
-import { useState } from 'react';
-import { signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
+import { useState, useEffect } from 'react';
+import { signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword, getRedirectResult } from 'firebase/auth';
 import { auth, googleProvider } from '../firebase';
 import { useNavigate } from 'react-router-dom';
-import { Loader2, Mail, Lock } from 'lucide-react';
+import { Loader2, Mail, Lock, AlertCircle } from 'lucide-react';
+
+const friendlyError = (code: string) => {
+  switch (code) {
+    case 'auth/unauthorized-domain':
+      return '🔒 This domain is not authorized in Firebase. Go to Firebase Console → Authentication → Settings → Authorized Domains and add: alan-varghese-git.github.io';
+    case 'auth/popup-blocked':
+      return '🚫 Popup was blocked by your browser. Allow popups for this site and try again.';
+    case 'auth/popup-closed-by-user':
+      return 'Sign-in window was closed. Please try again.';
+    case 'auth/cancelled-popup-request':
+      return 'Only one sign-in window can be open at a time.';
+    case 'auth/network-request-failed':
+      return '🌐 Network error. Check your internet connection.';
+    case 'auth/user-not-found':
+      return 'No account found with this email.';
+    case 'auth/wrong-password':
+      return 'Incorrect password.';
+    case 'auth/email-already-in-use':
+      return 'An account with this email already exists.';
+    default:
+      return code;
+  }
+};
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -12,6 +35,13 @@ const Auth = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
+  // Handle redirect result in case we previously used redirect flow
+  useEffect(() => {
+    getRedirectResult(auth)
+      .then((result) => { if (result?.user) navigate('/dashboard'); })
+      .catch(() => {});
+  }, [navigate]);
+
   const handleGoogleSignIn = async () => {
     setLoading(true);
     setError('');
@@ -19,7 +49,7 @@ const Auth = () => {
       await signInWithPopup(auth, googleProvider);
       navigate('/dashboard');
     } catch (err: any) {
-      setError(err.message);
+      setError(friendlyError(err.code || err.message));
     } finally {
       setLoading(false);
     }
@@ -42,6 +72,7 @@ const Auth = () => {
       setLoading(false);
     }
   };
+
 
   return (
     <div className="max-w-md mx-auto mt-12 bg-card p-8 rounded-2xl shadow-sm border">
@@ -96,7 +127,12 @@ const Auth = () => {
           </div>
         </div>
 
-        {error && <p className="text-sm text-destructive">{error}</p>}
+        {error && (
+          <div className="flex items-start gap-2 p-3 bg-destructive/10 border border-destructive/30 rounded-xl text-sm text-destructive">
+            <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+            <span>{error}</span>
+          </div>
+        )}
 
         <button
           type="submit"
