@@ -72,9 +72,13 @@ const Header = () => {
           >
             {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
           </button>
-          <button className="p-2 hover:bg-secondary rounded-full transition-colors text-muted-foreground">
+          <Link 
+            to="/settings"
+            className="p-2 hover:bg-secondary rounded-full transition-colors text-muted-foreground"
+            title="Settings"
+          >
             <Settings size={20} />
-          </button>
+          </Link>
           
           {user ? (
             <Link 

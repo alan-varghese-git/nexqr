@@ -7,6 +7,8 @@ import History from './components/history/History';
 import RedirectHandler from './components/RedirectHandler';
 import Auth from './pages/Auth';
 import Dashboard from './pages/Dashboard';
+import Settings from './pages/Settings';
+import Admin from './pages/Admin';
 import { AuthProvider, useAuth } from './contexts/AuthProvider';
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -29,6 +31,8 @@ function App() {
               <Route path="/history" element={<History />} />
               <Route path="/login" element={<Auth />} />
               <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+              <Route path="/settings" element={<Settings />} />
+              <Route path="/admin" element={<Admin />} />
               <Route path="/:shortId" element={<RedirectHandler />} />
             </Routes>
           </main>
