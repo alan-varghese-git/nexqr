@@ -10,16 +10,21 @@
         try {
           var savedTheme = localStorage.getItem('theme');
           var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-          if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+          var isDark = savedTheme === 'dark' || (!savedTheme && prefersDark);
+          if (isDark) {
             document.documentElement.classList.add('dark');
+            document.documentElement.style.backgroundColor = '#0b1120';
+            document.body && (document.body.style.backgroundColor = '#0b1120');
+          } else {
+            document.documentElement.style.backgroundColor = '#ffffff';
           }
         } catch (e) {}
       })();
     </script>
-    <script type="module" crossorigin src="./assets/index-D0-ZfhTm.js"></script>
+    <script type="module" crossorigin src="./assets/index-BUDEGNCC.js"></script>
     <link rel="stylesheet" crossorigin href="./assets/index-JJzDdpF9.css">
   </head>
-  <body>
+  <body style="margin:0;background-color:#0b1120">
     <div id="root"></div>
   </body>
 </html>
