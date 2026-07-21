@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link as LinkIcon, Type, Wifi, Contact, Phone, Mail, FileDown, Loader2, Image as ImageIcon, Video as VideoIcon, UploadCloud, MapPin, CreditCard, MessageCircle, MessageSquare } from 'lucide-react';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../../firebase';
 import { nanoid } from 'nanoid';
 import { AdvancedQRCode } from './AdvancedQRCode';
@@ -52,6 +52,8 @@ const QRGenerator = () => {
   const [dynamicExpiresAt, setDynamicExpiresAt] = useState('');
   const [dynamicMaxScans, setDynamicMaxScans] = useState('');
   const [uploadingFile, setUploadingFile] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   
   const qrRef = useRef<QRCodeStyling | null>(null);
 
@@ -197,28 +199,76 @@ const QRGenerator = () => {
             )}
 
             {(activeTab === 'image' || activeTab === 'video') && (
-              <div className="border-2 border-dashed rounded-xl p-8 flex flex-col items-center justify-center bg-muted/20">
-                <input type="file" accept={activeTab === 'image' ? 'image/*' : 'video/*'} className="hidden" id="file-upload" onChange={async (e)=>{
+              <div className="border-2 border-dashed rounded-xl p-8 flex flex-col items-center justify-center bg-muted/20 relative">
+                <input type="file" accept={activeTab === 'image' ? 'image/*' : 'video/*'} className="hidden" id="file-upload" onChange={(e)=>{
                   const file = e.target.files?.[0];
                   if(!file) return;
+                  
+                  // Create a preview
+                  const objectUrl = URL.createObjectURL(file);
+                  setPreviewUrl(objectUrl);
+                  
                   setUploadingFile(true);
+                  setUploadProgress(0);
+                  
                   try {
                     const storageRef = ref(storage, `uploads/${Date.now()}_${file.name}`);
-                    await uploadBytes(storageRef, file);
-                    const url = await getDownloadURL(storageRef);
-                    setQrValue(url);
+                    const uploadTask = uploadBytesResumable(storageRef, file);
+                    
+                    uploadTask.on('state_changed',
+                      (snapshot) => {
+                        const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                        setUploadProgress(progress);
+                      },
+                      (error) => {
+                        console.error("Upload error:", error);
+                        alert("Upload failed: " + error.message);
+                        setUploadingFile(false);
+                        setPreviewUrl(null);
+                        e.target.value = '';
+                      },
+                      async () => {
+                        try {
+                          const url = await getDownloadURL(uploadTask.snapshot.ref);
+                          setQrValue(url);
+                        } catch (err: any) {
+                          console.error("URL generation error:", err);
+                          alert("Failed to get file URL: " + err.message);
+                        } finally {
+                          setUploadingFile(false);
+                          e.target.value = '';
+                        }
+                      }
+                    );
                   } catch (err: any) {
-                    console.error("Upload error:", err);
-                    alert("Upload failed: " + err.message);
-                  } finally {
+                    console.error("Upload setup error:", err);
+                    alert("Upload setup failed: " + err.message);
                     setUploadingFile(false);
-                    e.target.value = ''; // Reset input
+                    setPreviewUrl(null);
+                    e.target.value = '';
                   }
                 }} />
-                <label htmlFor="file-upload" className="cursor-pointer flex flex-col items-center">
-                  <UploadCloud className="w-10 h-10 text-muted-foreground mb-3" />
-                  <span className="text-sm font-medium">{uploadingFile ? 'Uploading...' : 'Click to select file'}</span>
+                
+                {previewUrl && (
+                  <div className="mb-4 relative w-24 h-24 rounded-lg overflow-hidden border shadow-sm flex-shrink-0">
+                    {activeTab === 'image' ? (
+                      <img src={previewUrl} alt="Preview" className="w-full h-full object-cover" />
+                    ) : (
+                      <video src={previewUrl} className="w-full h-full object-cover" muted loop autoPlay />
+                    )}
+                  </div>
+                )}
+                
+                <label htmlFor="file-upload" className={`cursor-pointer flex flex-col items-center ${uploadingFile ? 'pointer-events-none opacity-50' : ''}`}>
+                  {!previewUrl && <UploadCloud className="w-10 h-10 text-muted-foreground mb-3" />}
+                  <span className="text-sm font-medium">{uploadingFile ? `Uploading... ${Math.round(uploadProgress)}%` : (previewUrl ? 'Change file' : 'Click to select file')}</span>
                 </label>
+                
+                {uploadingFile && (
+                  <div className="w-full max-w-xs mt-4 bg-muted rounded-full h-2 overflow-hidden border">
+                    <div className="bg-primary h-full transition-all duration-300 ease-out" style={{ width: `${uploadProgress}%` }}></div>
+                  </div>
+                )}
               </div>
             )}
             
