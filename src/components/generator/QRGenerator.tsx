@@ -1,8 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link as LinkIcon, Type, Wifi, Contact, Phone, Mail, FileDown, Loader2, Image as ImageIcon, Video as VideoIcon, UploadCloud, MapPin, CreditCard, MessageCircle, MessageSquare } from 'lucide-react';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
-import { db, storage } from '../../firebase';
+import { db } from '../../firebase';
 import { nanoid } from 'nanoid';
 import { AdvancedQRCode } from './AdvancedQRCode';
 import QRCodeStyling, { type Options } from 'qr-code-styling';
@@ -212,34 +211,48 @@ const QRGenerator = () => {
                   setUploadProgress(0);
                   
                   try {
-                    const storageRef = ref(storage, `uploads/${Date.now()}_${file.name}`);
-                    const uploadTask = uploadBytesResumable(storageRef, file);
-                    
-                    uploadTask.on('state_changed',
-                      (snapshot) => {
-                        const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                    const formData = new FormData();
+                    formData.append('file', file);
+
+                    const xhr = new XMLHttpRequest();
+                    xhr.open('POST', 'https://tmpfiles.org/api/v1/upload', true);
+
+                    xhr.upload.onprogress = (event) => {
+                      if (event.lengthComputable) {
+                        const progress = (event.loaded / event.total) * 100;
                         setUploadProgress(progress);
-                      },
-                      (error) => {
-                        console.error("Upload error:", error);
-                        alert("Upload failed: " + error.message);
-                        setUploadingFile(false);
-                        setPreviewUrl(null);
-                        e.target.value = '';
-                      },
-                      async () => {
-                        try {
-                          const url = await getDownloadURL(uploadTask.snapshot.ref);
-                          setQrValue(url);
-                        } catch (err: any) {
-                          console.error("URL generation error:", err);
-                          alert("Failed to get file URL: " + err.message);
-                        } finally {
-                          setUploadingFile(false);
-                          e.target.value = '';
-                        }
                       }
-                    );
+                    };
+
+                    xhr.onload = () => {
+                      setUploadingFile(false);
+                      e.target.value = '';
+                      if (xhr.status === 200) {
+                        try {
+                          const response = JSON.parse(xhr.responseText);
+                          // The URL looks like "https://tmpfiles.org/12345/example.jpg"
+                          // To make it a direct download link, we replace it with "tmpfiles.org/dl/"
+                          const rawUrl = response.data.url;
+                          const directUrl = rawUrl.replace('tmpfiles.org/', 'tmpfiles.org/dl/');
+                          setQrValue(directUrl);
+                        } catch (err: any) {
+                          alert("Failed to parse upload response.");
+                        }
+                      } else {
+                        alert("Upload failed with status: " + xhr.status);
+                        setPreviewUrl(null);
+                      }
+                    };
+
+                    xhr.onerror = () => {
+                      setUploadingFile(false);
+                      setPreviewUrl(null);
+                      e.target.value = '';
+                      alert("Upload failed. Please check your connection.");
+                    };
+
+                    xhr.send(formData);
+
                   } catch (err: any) {
                     console.error("Upload setup error:", err);
                     alert("Upload setup failed: " + err.message);
