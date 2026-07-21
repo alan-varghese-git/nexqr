@@ -575,7 +575,7 @@ const QRGenerator = () => {
 
                 <button 
                   onClick={handleMakeDynamic}
-                  disabled={isCreatingDynamic || !qrValue.trim() || activeTab === 'image'}
+                  disabled={isCreatingDynamic || !qrValue.trim() || uploadingFile}
                   className="w-full flex items-center justify-center gap-2 bg-foreground text-background py-2.5 rounded-lg font-medium hover:bg-foreground/90 transition-colors disabled:opacity-50"
                 >
                   {isCreatingDynamic && <Loader2 className="animate-spin" size={16} />}
