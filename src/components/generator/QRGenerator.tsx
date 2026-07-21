@@ -45,6 +45,9 @@ const QRGenerator = () => {
   const [isCreatingDynamic, setIsCreatingDynamic] = useState(false);
   const [dynamicError, setDynamicError] = useState('');
   const [dynamicSuccess, setDynamicSuccess] = useState(false);
+  const [dynamicPassword, setDynamicPassword] = useState('');
+  const [dynamicExpiresAt, setDynamicExpiresAt] = useState('');
+  const [dynamicMaxScans, setDynamicMaxScans] = useState('');
   const [uploadingFile, setUploadingFile] = useState(false);
   
   const qrRef = useRef<QRCodeStyling | null>(null);
@@ -110,6 +113,10 @@ const QRGenerator = () => {
         data: activeTab !== 'url' ? { raw: qrValue } : null,
         scans: 0,
         analytics: [],
+        password: dynamicPassword.trim() || null,
+        expiresAt: dynamicExpiresAt ? new Date(dynamicExpiresAt).toISOString() : null,
+        maxScans: dynamicMaxScans ? parseInt(dynamicMaxScans, 10) : null,
+        isLocked: false,
         createdAt: serverTimestamp()
       });
       setQrValue(`${window.location.origin}/${shortId}`);
@@ -350,13 +357,50 @@ const QRGenerator = () => {
             </button>
           </div>
           
-          <div className="w-full pt-4 text-center">
+          <div className="w-full pt-4 text-center border-t">
             {dynamicSuccess ? (
               <div className="p-3 bg-green-500/10 text-green-600 rounded-lg text-sm font-medium border border-green-500/20">
                 Success! QR is now Dynamic.
               </div>
             ) : (
-              <>
+              <div className="space-y-3">
+                <details className="text-left bg-muted/40 rounded-lg p-2.5 text-xs">
+                  <summary className="font-medium cursor-pointer text-muted-foreground hover:text-foreground">
+                    ⚡ Dynamic Options (Password, Expiry...)
+                  </summary>
+                  <div className="mt-3 space-y-2 pt-2 border-t">
+                    <div>
+                      <label className="block text-[11px] font-medium text-muted-foreground">Password Lock</label>
+                      <input
+                        type="password"
+                        placeholder="Optional Password"
+                        value={dynamicPassword}
+                        onChange={(e) => setDynamicPassword(e.target.value)}
+                        className="w-full px-2.5 py-1.5 rounded border text-xs bg-background mt-1"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-medium text-muted-foreground">Expiration Date</label>
+                      <input
+                        type="datetime-local"
+                        value={dynamicExpiresAt}
+                        onChange={(e) => setDynamicExpiresAt(e.target.value)}
+                        className="w-full px-2.5 py-1.5 rounded border text-xs bg-background mt-1"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-medium text-muted-foreground">Max Scan Limit</label>
+                      <input
+                        type="number"
+                        placeholder="e.g. 100"
+                        value={dynamicMaxScans}
+                        onChange={(e) => setDynamicMaxScans(e.target.value)}
+                        className="w-full px-2.5 py-1.5 rounded border text-xs bg-background mt-1"
+                      />
+                    </div>
+                  </div>
+                </details>
+
                 <button 
                   onClick={handleMakeDynamic}
                   disabled={isCreatingDynamic || !qrValue.trim() || activeTab === 'image'}
@@ -368,7 +412,7 @@ const QRGenerator = () => {
                 {dynamicError && (
                   <p className="text-xs text-destructive mt-2">{dynamicError}</p>
                 )}
-              </>
+              </div>
             )}
           </div>
         </div>
